@@ -1,0 +1,35 @@
+﻿name: wateen_shop
+description: "أبو وتين — إدارة المتجر (Flutter)"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  barcode: ^2.2.9
+  barcode_widget: ^2.0.4
+  dio: ^5.11.1
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  mobile_scanner: ^7.4.2
+  pdf: ^3.12.0
+  printing: ^5.14.3
+  shared_preferences: ^2.5.5
+
+# pdf 3.12.0 caps `archive` at <4.1.0, but image 4.11.0 calls ZLibDecoder.decodeLazy
+# (added in archive 4.4). pdf does not use archive beyond a ZLibEncoder tear-off,
+# so the newer archive is safe and lets `image` compile.
+dependency_overrides:
+  archive: 4.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
