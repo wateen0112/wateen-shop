@@ -1,7 +1,16 @@
 import axios from 'axios';
 import { clearSession, getToken } from './lib/auth';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    if (window.__WATEEN_API_URL__) return window.__WATEEN_API_URL__;
+    if (window.API_BASE_URL) return window.API_BASE_URL;
+    if (window.ENV && window.ENV.VITE_API_URL) return window.ENV.VITE_API_URL;
+  }
+  return import.meta.env.VITE_API_URL || '/api';
+};
+
+const api = axios.create({ baseURL: getBaseURL() });
 
 // إرفاق توكن الجلسة مع كل طلب
 api.interceptors.request.use(config => {
