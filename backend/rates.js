@@ -26,6 +26,7 @@ async function getUsdRate() {
         continue;
       }
 
+      console.log('API call succeeded with key', key.substring(0, 5));
       const city = process.env.CURRENCY_CITY || 'damascus';
       const usd = data?.data?.rates?.find(r => r.code === 'USD');
       const rate = usd?.cities?.[city]?.sell ?? usd?.cities?.[Object.keys(usd?.cities || {})[0]]?.sell;
@@ -46,7 +47,7 @@ module.exports = { getUsdRate };
 
 // فحص سريع: node rates.js — يفشل إذا انكسر جلب السعر
 if (require.main === module) {
-  require('dotenv').config();
+  require('dotenv').config({ path: 'backend/.env' });
   getUsdRate().then(r => {
     console.log('USD rate:', r);
     if (!r) { console.error('FAIL: no rate'); process.exit(1); }
