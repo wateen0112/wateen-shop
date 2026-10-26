@@ -6,7 +6,7 @@ let cache = { rate: null, at: 0 };
 
 async function getUsdRate() {
   const now = Date.now();
-  if (cache.rate && now - cache.at < 10 * 60 * 1000) return cache.rate;
+  if (cache.rate && now - cache.at < 30 * 1000) return cache.rate;
 
   const url = process.env.CURRENCY_API_URL;
   if (!url) return cache.rate; // ponytail: بدون API نرجع آخر قيمة (أو null)

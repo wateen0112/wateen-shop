@@ -295,7 +295,8 @@ function Shell() {
         </div>
         <div className="appbar-actions">
           <button 
-            className={`rate-chip ${rate ? '' : 'muted'}`} 
+          style={{color:'white'}}
+            className={`rate-chip   text-white ${rate ? '' : 'muted'}`} 
             onClick={fetchRate}
             disabled={refreshing}
             title="تحديث سعر الصرف"
