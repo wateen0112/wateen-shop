@@ -59,27 +59,80 @@ export default function Barcodes() {
 
     setBusy(true);
     try {
-      const svgDoc = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const cols = 3, rows = 8, cw = 65, ch = 33;
-      let x = 5, y = 5, count = 0;
+      const cols = 3;
+      const rows = 8;
+      const cw = 65;
+      const ch = 33;
+      let x = 5;
+      let y = 5;
+      let count = 0;
 
       for (const item of items) {
-        svgDoc.innerHTML = '';
-        JsBarcode(svgDoc, item.barcode, { format: barcodeFormat(item.barcode), width: 2, height: 40, displayValue: true, fontSize: 14, margin: 0 });
-        const img = new Image();
-        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgDoc.outerHTML)));
-        await new Promise(r => { img.onload = r; });
-        pdf.addImage(img, 'SVG', x, y + 5, 60, 22);
-        pdf.setFontSize(9);
-        pdf.text(String(item.name).slice(0, 28), x + 30, y + 3, { align: 'center' });
+        // Create a canvas for this label
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 600;
+        labelCanvas.height = 300;
+        const ctx = labelCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 600, 300);
+        
+        // Draw barcode
+        const barcodeCanvas = document.createElement('canvas');
+        try {
+          JsBarcode(barcodeCanvas, item.barcode, {
+            format: barcodeFormat(item.barcode),
+            width: 3,
+            height: 80,
+            displayValue: true,
+            fontSize: 28,
+            margin: 10,
+            textMargin: 8,
+            font: 'Arial, sans-serif',
+          });
+        } catch {
+          JsBarcode(barcodeCanvas, item.barcode, {
+            width: 3,
+            height: 80,
+            displayValue: true,
+            fontSize: 28,
+            margin: 10,
+            textMargin: 8,
+            font: 'Arial, sans-serif',
+          });
+        }
+        
+        // Draw barcode centered
+        ctx.drawImage(barcodeCanvas, 50, 60, 500, 140);
+        
+        // Draw item name centered at top
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 32px Arial, "Tahoma", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const name = String(item.name || '').replace(/\s+/g, ' ').trim();
+        const shortName = name.length > 45 ? name.slice(0, 42) + '...' : name;
+        ctx.fillText(shortName, 300, 15);
+        
+        const imgData = labelCanvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', x, y, cw, ch);
         x += cw;
-        if (++count % cols === 0) { x = 5; y += ch; }
-        if (count % (cols * rows) === 0 && count < items.length) pdf.addPage();
+        if (++count % cols === 0) {
+          x = 5;
+          y += ch;
+        }
+        if (count % (cols * rows) === 0 && count < items.length) {
+          pdf.addPage();
+          x = 5;
+          y = 5;
+        }
       }
       pdf.save('barcodes.pdf');
       setNoBarcode(await getNoBarcode());
       setSelected(new Set());
+      setMsg({ type: 'success', text: `تم إنشاء ملف PDF لـ ${items.length} باركود` });
+    } catch (e2) {
+      setMsg({ type: 'error', text: e2.response?.data?.error || e2.message || 'تعذّر إنشاء PDF' });
     } finally {
       setBusy(false);
     }

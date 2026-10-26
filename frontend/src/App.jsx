@@ -273,7 +273,7 @@ function Shell() {
             <MenuIcon />
           </button>
           <div className="brand">
-            <span className="brand-logo"><StoreIcon /></span>
+              <span className="brand-logo"><img src="/android-chrome-192x192.png" alt="أبو وتين" /></span>
             <span className="brand-text">
               <h1>أبو وتين</h1>
               <small>إدارة المتجر</small>
