@@ -225,14 +225,27 @@ function Shell() {
   const [catalog, setCatalog] = useState([]);
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
+  const fetchRate = async () => {
+    setRefreshing(true);
+    try {
+      const r = await getRate();
+      setRate(r.usdToSyp);
+    } catch (e) {
+      // silent
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    getRate().then(r => setRate(r.usdToSyp)).catch(() => {});
-    const t = setInterval(() => getRate().then(r => setRate(r.usdToSyp)).catch(() => {}), 5 * 60 * 1000);
+    fetchRate();
+    const t = setInterval(fetchRate, 10 * 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -281,9 +294,14 @@ function Shell() {
           </div>
         </div>
         <div className="appbar-actions">
-          <div className={`rate-chip ${rate ? '' : 'muted'}`}>
-            {rate ? `الدولار ${Number(rate).toLocaleString('ar-SY')} ل.س` : 'الدولار غير مضبوط'}
-          </div>
+          <button 
+            className={`rate-chip ${rate ? '' : 'muted'}`} 
+            onClick={fetchRate}
+            disabled={refreshing}
+            title="تحديث سعر الصرف"
+          >
+            {refreshing ? 'جارٍ التحديث...' : (rate ? `الدولار ${Number(rate).toLocaleString('ar-SY')} ل.س` : 'الدولار غير مضبوط (اضغط للتحديث)')}
+          </button>
           <button className="icon-btn account-btn" onClick={() => setAccountOpen(true)} aria-label="حسابي">
             <UserIcon />
           </button>

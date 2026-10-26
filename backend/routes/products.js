@@ -32,7 +32,8 @@ router.post('/', requirePerm('products.edit'), async (req, res) => {
   try {
     const {
       name, barcode, unit, purchaseUnit, saleUnit, conversion,
-      quantity, purchasePrice, purchaseCurrency, salePrice,
+      quantity, quantityInPurchaseUnits, quantityPurchase, quantityInBuy,
+      purchasePrice, purchaseCurrency, salePrice,
     } = req.body;
     const entered = normalizeBarcode(barcode);
     // باركود فارغ أو غير صالح => نولّد واحداً تلقائياً
@@ -40,6 +41,11 @@ router.post('/', requirePerm('products.edit'), async (req, res) => {
     const sellUnit = String(saleUnit || unit || 'قطعة').trim() || 'قطعة';
     const buyUnit = String(purchaseUnit || sellUnit).trim() || sellUnit;
     const factor = Number(conversion) > 0 ? Number(conversion) : 1;
+    let qty = Number(quantity) || 0;
+    const qtyInPurchase = Number(quantityInPurchaseUnits ?? quantityPurchase ?? quantityInBuy);
+    if (Number.isFinite(qtyInPurchase) && qtyInPurchase > 0) {
+      qty = qtyInPurchase * factor;
+    }
     const product = new Product({
       name,
       barcode: barcodeGenerated ? await generateInternalBarcode() : entered,
@@ -47,10 +53,11 @@ router.post('/', requirePerm('products.edit'), async (req, res) => {
       purchaseUnit: buyUnit,
       saleUnit: sellUnit,
       conversion: factor,
-      quantity: quantity || 0,
+      quantity: qty,
       purchasePrice, purchaseCurrency: purchaseCurrency || 'SYP',
       salePrices: salePrice ? [{ price: salePrice }] : [],
     });
+    const qtyInPurchaseUnitsDisplay = Number.isFinite(qtyInPurchase) && qtyInPurchase > 0 ? qtyInPurchase : (factor ? qty / factor : qty);
     await product.save();
     const unitCost = product.unitCost;
     await audit(req, {
@@ -70,6 +77,7 @@ router.post('/', requirePerm('products.edit'), async (req, res) => {
         conversion: factor,
         unitCost,
         quantity: product.quantity,
+        quantityInPurchaseUnits: qtyInPurchaseUnitsDisplay,
         purchasePrice: product.purchasePrice,
         purchaseCurrency: product.purchaseCurrency,
         salePrice: salePrice || null,

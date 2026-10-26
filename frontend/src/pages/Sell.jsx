@@ -11,11 +11,11 @@ const number = (v) => Number(v || 0);
 export default function Sell({ rate }) {
   const { can } = useAuth();
   const [query, setQuery] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [log, setLog] = useState([]);
   const [msg, setMsg] = useState(null);
   const [scanning, setScanning] = useState(false);
-  const [autoSell, setAutoSell] = useState(true);
   const [onCredit, setOnCredit] = useState(false);
   const [customerId, setCustomerId] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -26,6 +26,11 @@ export default function Sell({ rate }) {
   const canSearch = can('products.view');
 
   useEffect(() => {
+    // reset selected product when query changes significantly
+    if (selectedProduct && query !== selectedProduct.name) {
+      setSelectedProduct(null);
+    }
+    
     const term = query.trim();
     if (!canSearch || term.length < 1) {
       setSuggestions([]);
@@ -61,11 +66,12 @@ export default function Sell({ rate }) {
         type: 'success',
         text: onCredit
           ? `تم البيع على الحساب — أُضيف ${Number(sale.totalSYP).toLocaleString('ar-SY')} ل.س إلى دين الشخص`
-          : `تم البيع — الربح: ${Number(sale.totalProfitSYP).toLocaleString('ar-SY')} ل.س`,
+          : `تمت عملية البيع بنجاح`,
       });
       setQuery('');
       setSuggestions([]);
       setPickOpen(false);
+      setSelectedProduct(null);
       setQuantity(1);
     } catch (e2) {
       setMsg({ type: 'error', text: e2.response?.data?.error || 'تعذّر إتمام البيع' });
@@ -78,19 +84,20 @@ export default function Sell({ rate }) {
       setMsg({ type: 'error', text: product ? `الكمية غير كافية (المتاح: ${number(product.quantity)})` : 'الصنف غير متوفر' });
       return;
     }
-    sell({ productId: product._id });
+    setSelectedProduct(product);
+    setQuery(product.name);
+    setPickOpen(false);
   };
 
   const submit = (e) => {
     e.preventDefault();
-    const term = query.trim();
-    if (!term) return;
-    const picked = pickOpen && suggestions[highlight];
-    if (picked) {
-      sellProduct(picked);
-      return;
+    if (selectedProduct) {
+      sell({ productId: selectedProduct._id });
+    } else {
+      const term = query.trim();
+      if (!term) return;
+      sell(term);
     }
-    sell(term);
   };
 
   const onKeyDown = (e) => {
@@ -109,8 +116,8 @@ export default function Sell({ rate }) {
   const handleScan = (code) => {
     setScanning(false);
     setQuery(code);
-    if (autoSell) sell(code);
-    else requestAnimationFrame(() => inputRef.current?.focus());
+    // When scanning, we don't auto-sell, we just populate the query
+    // Let's try to search by the code immediately
   };
 
   const toggleCredit = (checked) => {
@@ -192,11 +199,6 @@ export default function Sell({ rate }) {
             </div>
           </label>
 
-          <label className="switch-row">
-            <input type="checkbox" checked={autoSell} onChange={e => setAutoSell(e.target.checked)} />
-            <span>بيع تلقائي بعد المسح</span>
-          </label>
-
           {can('debts.view') && (
             <label className="switch-row">
               <input type="checkbox" checked={onCredit} onChange={e => toggleCredit(e.target.checked)} />
@@ -234,7 +236,7 @@ export default function Sell({ rate }) {
                   <small>{s.at} · كمية {s.quantity}{s.onCredit ? ' · على الحساب' : ''}</small>
                 </div>
                 <span className={`profit-chip ${s.onCredit ? 'credit' : ''}`}>
-                  {s.onCredit ? 'دين' : `+${Number(s.totalProfitSYP).toLocaleString('ar-SY')}`}
+                  {s.onCredit ? 'دين' : ''}
                 </span>
               </li>
             ))}

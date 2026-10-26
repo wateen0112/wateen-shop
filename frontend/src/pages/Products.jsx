@@ -8,7 +8,7 @@ import { isValidBarcode } from '../lib/barcode';
 
 const empty = {
   name: '', barcode: '', purchaseUnit: '', saleUnit: '', conversion: 1,
-  quantity: 0, purchasePrice: '', purchaseCurrency: 'SYP', salePrice: '',
+  quantityInPurchaseUnits: 0, purchasePrice: '', purchaseCurrency: 'SYP', salePrice: '',
 };
 
 export default function Products({ rate }) {
@@ -47,7 +47,7 @@ export default function Products({ rate }) {
     e.preventDefault();
     try {
       const res = await addProduct(form);
-      setForm(f => ({ ...empty, purchaseUnit: f.purchaseUnit, saleUnit: f.saleUnit, purchaseCurrency: f.purchaseCurrency }));
+      setForm(f => ({ ...empty, purchaseUnit: f.purchaseUnit, saleUnit: f.saleUnit, purchaseCurrency: f.purchaseCurrency, conversion: f.conversion }));
       setCreated(res.barcodeGenerated ? { name: form.name, barcode: res.barcode } : null);
       setMsg({
         type: 'success',
@@ -101,6 +101,8 @@ export default function Products({ rate }) {
   const formConversion = Number(form.conversion) > 0 ? Number(form.conversion) : 0;
   const formPrice = Number(form.purchasePrice);
   const formUnitCost = formConversion && Number.isFinite(formPrice) ? formPrice / formConversion : null;
+  const formQtyInPurchase = Number(form.quantityInPurchaseUnits);
+  const formQtyInSale = formConversion && Number.isFinite(formQtyInPurchase) && formQtyInPurchase > 0 ? formQtyInPurchase * formConversion : null;
 
   return (
     <div className="page">
@@ -289,14 +291,8 @@ export default function Products({ rate }) {
                     <input type="number" inputMode="numeric" placeholder={`الكمية (${saleUnit})`} value={editQty[p._id] ?? ''} onChange={e => setEditQty({ ...editQty, [p._id]: e.target.value })} />
                     <button className="btn secondary sm" onClick={() => changeQty(p)}>حفظ</button>
                   </div>
-                  <div className="mini-field">
-                    <input type="number" step="any" inputMode="decimal" placeholder="سعر بيع جديد" value={editQty['sp' + p._id] ?? ''} onChange={e => setEditQty({ ...editQty, ['sp' + p._id]: e.target.value })} />
-                    <button className="btn secondary sm" onClick={() => newSalePrice(p)}>إضافة</button>
-                  </div>
-                  <div className="mini-field">
-                    <input type="number" step="any" min="0.0001" inputMode="decimal" placeholder="معامل التحويل" value={editQty['cv' + p._id] ?? ''} onChange={e => setEditQty({ ...editQty, ['cv' + p._id]: e.target.value })} />
-                    <button className="btn secondary sm" onClick={() => changeConversion(p)}>حفظ</button>
-                  </div>
+                 
+               
                 </div>
               )}
 

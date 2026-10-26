@@ -23,7 +23,10 @@ router.post('/', requirePerm('sales.create'), async (req, res) => {
     if (!p) { p = await Product.findOne({ name: new RegExp(esc, 'i') }).sort({ updatedAt: -1 }); }
   }
   if (!p) return res.status(404).json({ error: 'المنتج غير موجود' });
-  if (p.quantity < q) return res.status(400).json({ error: `الكمية غير كافية (المتاح: ${p.quantity})` });
+
+  const factor = p.conversionFactor || 1;
+  const qtyInSaleUnits = q * factor;
+  if (p.quantity < qtyInSaleUnits) return res.status(400).json({ error: `الكمية غير كافية (المتاح: ${p.quantity} ${p.saleUnit || p.unit || 'قطعة'})` });
 
   let customer = null;
   if (onCredit) {
@@ -38,7 +41,7 @@ router.post('/', requirePerm('sales.create'), async (req, res) => {
   // تكلفة وحدة البيع الواحدة = سعر وحدة الشراء ÷ معامل التحويل
   const unitCost = p.unitCost;
   const sellUnit = p.saleUnit || p.unit || 'قطعة';
-  p.quantity -= q;
+  p.quantity -= qtyInSaleUnits;
   const sale = new Sale({
     product: p._id, quantity: q, salePrice,
     purchasePrice: unitCost, purchaseCurrency: p.purchaseCurrency,
@@ -75,7 +78,8 @@ router.post('/', requirePerm('sales.create'), async (req, res) => {
       salePrice,
       total: salePrice * q,
       unitCost,
-      conversion: p.conversionFactor,
+      conversion: factor,
+      qtyInSaleUnits,
       onCredit: !!onCredit,
       customer: customer ? { id: String(customer._id), name: customer.name } : null,
       remainingQuantity: p.quantity,
