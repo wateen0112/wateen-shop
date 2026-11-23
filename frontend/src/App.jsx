@@ -226,6 +226,7 @@ function Shell() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [rateSource, setRateSource] = useState(null);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -236,6 +237,7 @@ function Shell() {
     try {
       const r = await getRate();
       setRate(r.usdToSyp);
+      setRateSource(r.source || null);
     } catch (e) {
       // silent
     } finally {
@@ -299,7 +301,7 @@ function Shell() {
             className={`rate-chip   text-white ${rate ? '' : 'muted'}`} 
             onClick={fetchRate}
             disabled={refreshing}
-            title="تحديث سعر الصرف"
+            title={rateSource ? `تحديث سعر الصرف (المصدر: ${rateSource})` : 'تحديث سعر الصرف'}
           >
             {refreshing ? 'جارٍ التحديث...' : (rate ? `الدولار ${Number(rate).toLocaleString('ar-SY')} ل.س` : 'الدولار غير مضبوط (اضغط للتحديث)')}
           </button>
